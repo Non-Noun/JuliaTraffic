@@ -1,35 +1,43 @@
 struct Leaf
     value::Float64
-    links::Vector{Float64}
+    links::Vector{Vector{Float64}}
 end
 
 struct Node
     left::Union{Node, Leaf}
     right::Union{Node, Leaf}
     value::Float64
-    links::Vector{Float64}
+    links::Union{Vector{Vector{Float64}}, Node}
     Node(x::Union{Leaf, Node}, y::Union{Leaf, Node}, value::Float64) = (
         new(x, y, value, vcat(x.links, y.links))
+    )
+    Node(x::Union{Leaf, Node}, y::Union{Leaf, Node}, value::Float64, subtree::Node) = (
+        new(x, y, value, subtree)
     )
 end
 
 struct ScaffoldingNode
     node
     value
-    ScaffoldingNode(node::Node) = (
-        new(node, node.value)
+    points::Vector{Vector{Float64}}
+    ScaffoldingNode(node::Node, points) = (
+        new(node, node.value, points)
     )
     ScaffoldingNode(leaf::Leaf) = (
-        new(leaf, leaf.value)
+        new(leaf, leaf.value, leaf.links)
     )
-    ScaffoldingNode(node::Node, value::Float64) = (
-        new(node, value)
+    ScaffoldingNode(node::Node, value::Float64, points::Vector{Vector{Float64}}) = (
+        new(node, value, points)
     )
 end
 
-function combine(l::ScaffoldingNode, r::ScaffoldingNode)
-    node = Node(l.node, r.node, r.value)
-    return ScaffoldingNode(node, l.value)
+function combine(l::ScaffoldingNode, r::ScaffoldingNode, level::Int64)
+    if level == 1
+        node = Node(l.node, r.node, r.value, maketree(vcat(l.points, r.points), 2))
+    else
+        node = Node(l.node, r.node, r.value)
+    end
+    return ScaffoldingNode(node, l.value, vcat(l.points, r.points))
 end
 
 function find(tree::Node, key::Float64)
@@ -101,13 +109,13 @@ function transformpoints(points::Vector{Float64})
     return (middles, sortedpoints)
 end
 
-function combine(nodes::Vector{ScaffoldingNode})
+function combine(nodes::Vector{ScaffoldingNode}, level)
     new_nodes = Vector{ScaffoldingNode}()
 
     n = length(nodes)
     num_untouched = 2^ceil(Int, log2(n)) - n
     for i = 1:2:n-num_untouched -1
-        push!(new_nodes, combine(nodes[i], nodes[i+1]))
+        push!(new_nodes, combine(nodes[i], nodes[i+1], level))
     end
 
     for i = n-num_untouched +1 : n
@@ -116,22 +124,76 @@ function combine(nodes::Vector{ScaffoldingNode})
     return new_nodes
 end
 
-function maketree(points::Vector{Float64})
+function maketree(points::Vector{Vector{Float64}}, coordinate::Int64)
     construction = Vector{ScaffoldingNode}()
+    sort!(points, by=x->x[coordinate])
     for p in points
-        push!(construction, ScaffoldingNode(Leaf(p, [p])))
+        push!(construction, ScaffoldingNode(Leaf(p[coordinate], [p])))
     end
 
     while length(construction) > 1
-        construction = combine(construction)
+        if coordinate ==1
+            println(length(construction))
+        end
+        construction = combine(construction, coordinate)
     end
 
     return construction[1].node
 end
 
+function finlizeorsearch(possiblepoints::Vector{Vector{Float64}}, point, radius)
+    for i in reverse(1:length(possiblepoints))
+        difference = possiblepoints[i] - point
+        distance = difference[1]^2 + difference[2]^2
+        if distance > radius
+            deleteat!(possiblepoints, i)
+        end
+    end
+end
+
+function finalizeorsearch(node::Node, point::Vector{Vector{Float64}}, radius::Float64)
+    find()
+end
+
+function findradius(tree::Node, point::Vector{Vector{Float64}}, radius::Float64)
+    lower = point[1] - radius
+    upper = point[1] + radius
+    partialresult = find(tree, lower, upper)
+
+    closenodes = Vector{Vector{Float64}}()
+
+    lower = point[2] - radius
+    upper = point[2] + radius
+    for result in partialresult
+        if result isa Node
+            secondpoints = find(result, lower, upper)
+            for secondpoint in seconpoints
+                if distance(secondpoint, point) <= radius^2
+                    push!(closenodes, secondpoints)
+                end
+            end
+        else
+            for secondpoint in result
+                if distance(secondpoint, point) <=radius^2
+                    push!(closenodes, secondpoint)
+                end
+            end
+        end
+    end
+    return closenodes
+end
+
+function distance(newpoint::Vector{Vector{Float64}}, point::Vector{Vector{Float64}})
+    difference = newpoint - point
+    return difference[1]^2 + difference[2]^2
+end
+
 using Profile
 
-randompoints = sort(rand(128000))
+randompoints = Vector{Vector{Float64}}()
+for i = 1:128000
+    push!(randompoints, rand(2))
+end
 
-tree = maketree(randompoints)
-@time find(tree, 0.2, 0.8)
+tree = maketree(randompoints, 1)
+@time find(tree, 0.2, 0.205)
