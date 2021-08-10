@@ -16,6 +16,15 @@ struct Node
     )
 end
 
+"""
+The scaffolding node is used while constructing the orthogonal tree.
+
+The value of the scaffolding node is expected to be the smallest value
+in the tree contained in node. This is never checked.
+
+The points should be a vector of all points contained in the tree in
+node.
+"""
 struct ScaffoldingNode
     node
     value
@@ -31,6 +40,22 @@ struct ScaffoldingNode
     )
 end
 
+"""
+This function combines two scaffolding nodes into a new scaffolding node.
+
+To do this, the contained nodes are merged into a new node, with the left
+node as the left subtree and the right node as the right subtree. The new
+node will be given the value of the right subtree.
+
+The new scaffolding node will inherit the value from the left subtree. Thus,
+the property of keeping the lowest value in the tree as the value of the
+scaffolding node.
+
+If combine is done on the first level of the tree, then a subtree based on
+the second coordinate should be constructed and attached to the node. Else,
+if the combination is done on the second level, then the node will not
+have a subtree constructed.
+"""
 function combine(l::ScaffoldingNode, r::ScaffoldingNode, level::Int64)
     if level == 1
         node = Node(l.node, r.node, r.value, maketree(vcat(l.points, r.points), 2))
@@ -40,6 +65,7 @@ function combine(l::ScaffoldingNode, r::ScaffoldingNode, level::Int64)
     return ScaffoldingNode(node, l.value, vcat(l.points, r.points))
 end
 
+
 function find(tree::Node, key::Float64)
     if key < tree.value
         return find(tree.left, key)
@@ -48,6 +74,16 @@ function find(tree::Node, key::Float64)
     end
 end
 
+"""
+Returns the points with coordinate between keylower and keyupper.
+
+The search in the tree is done by first looking if keylower is bigger than
+the value of the node, and move into the right tree. Or if keyupper is
+smaller than the value of the node, and then search in the left subtree.
+
+If either keylower is smaller than or keyupper is bigger than the value,
+then call rindright and findleft to get the points.
+"""
 function find(tree::Node, keylower::Float64, keyupper::Float64)
     if keylower >= tree.value
         return find(tree.right, keyupper, keylower)
@@ -64,6 +100,19 @@ function find(leaf::Leaf, keylower::Float64, keyupper::Float64)
     return leaf.links
 end
 
+"""
+Returns the points greater than keylower from the tree. Can also return
+an empty Vector{Float64}, if no such points exist.
+
+If keylower is bigger than the value of the current node, then another
+search is done on the right subtree. Because, if the value is smaller
+than keylower, then the value must (if it exists) must be in the
+right tree.
+
+If keylower is smaller than the value in the current node, then the
+left subtree will be searched further. In addition, this also means
+that all points in the right subtree should be returned.
+"""
 function findleft(tree::Node, keylower::Float64)
     if keylower < tree.value
         return vcat(findleft(tree.left, keylower), tree.right.links)
@@ -74,6 +123,12 @@ function findleft(tree::Node, keylower::Float64)
     end
 end
 
+"""
+Returns the points stored in the leaves, if keylower is smaller than
+the value of the leaf.
+
+Otherwise, an empty Vector{Float64} is returned.
+"""
 function findleft(leaf::Leaf, keylower::Float64)
     if keylower < leaf.value
         return leaf.links
