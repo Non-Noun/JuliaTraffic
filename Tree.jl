@@ -210,7 +210,12 @@ function finalizeorsearch(node::Node, point::Vector{Vector{Float64}}, radius::Fl
     find()
 end
 
-function findradius(tree::Node, point::Vector{Vector{Float64}}, radius::Float64)
+"""
+Finds all points in a given radius around the given point.
+
+
+"""
+function findradius(tree::Node, point::Vector{Float64}, radius::Float64)
     lower = point[1] - radius
     upper = point[1] + radius
     partialresult = find(tree, lower, upper)
@@ -222,23 +227,21 @@ function findradius(tree::Node, point::Vector{Vector{Float64}}, radius::Float64)
     for result in partialresult
         if result isa Node
             secondpoints = find(result, lower, upper)
-            for secondpoint in seconpoints
+            for secondpoint in secondpoints
                 if distance(secondpoint, point) <= radius^2
-                    push!(closenodes, secondpoints)
+                    push!(closenodes, secondpoint)
                 end
             end
         else
-            for secondpoint in result
-                if distance(secondpoint, point) <=radius^2
-                    push!(closenodes, secondpoint)
-                end
+            if distance(result, point) <=radius^2
+                push!(closenodes, result)
             end
         end
     end
     return closenodes
 end
 
-function distance(newpoint::Vector{Vector{Float64}}, point::Vector{Vector{Float64}})
+function distance(newpoint::Vector{Float64}, point::Vector{Float64})
     difference = newpoint - point
     return difference[1]^2 + difference[2]^2
 end
@@ -251,4 +254,6 @@ for i = 1:128000
 end
 
 tree = maketree(randompoints, 1)
-@time find(tree, 0.2, 0.205)
+# result = find(tree, 0.2, 0.205)
+
+@time findradius(tree, randompoints[1], 0.1)
