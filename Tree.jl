@@ -245,15 +245,3 @@ function distance(newpoint::Vector{Float64}, point::Vector{Float64})
     difference = newpoint - point
     return difference[1]^2 + difference[2]^2
 end
-
-using Profile
-
-randompoints = Vector{Vector{Float64}}()
-for i = 1:128000
-    push!(randompoints, rand(2))
-end
-
-tree = maketree(randompoints, 1)
-# result = find(tree, 0.2, 0.205)
-
-@time findradius(tree, randompoints[1], 0.1)
