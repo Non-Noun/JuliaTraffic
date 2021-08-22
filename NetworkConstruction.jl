@@ -61,14 +61,3 @@ function split(
     midpoint = Int(floor(length(order)/2))
     return (order[1:midpoint], order[(midpoint+1):length(order)])
 end
-
-data = Vector{Vector{Float64}}()
-for i in 1:1000
-    newvec = [rand(), rand()]
-    push!(data, newvec)
-end
-rectangles = splitdata(data, 3)
-
-for r in rectangles
-    println(length(r))
-end
