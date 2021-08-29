@@ -1,5 +1,3 @@
-include("NetworkConstruction.jl")
-
 data = Vector{Vector{Float64}}()
 for i in 1:1000
     newvec = [rand(), rand()]

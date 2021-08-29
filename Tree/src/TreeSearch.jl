@@ -1,71 +1,3 @@
-struct Leaf
-    value::Float64
-    links::Vector{Vector{Float64}}
-end
-
-struct Node
-    left::Union{Node, Leaf}
-    right::Union{Node, Leaf}
-    value::Float64
-    links::Union{Vector{Vector{Float64}}, Node}
-    Node(x::Union{Leaf, Node}, y::Union{Leaf, Node}, value::Float64) = (
-        new(x, y, value, vcat(x.links, y.links))
-    )
-    Node(x::Union{Leaf, Node}, y::Union{Leaf, Node}, value::Float64, subtree::Node) = (
-        new(x, y, value, subtree)
-    )
-end
-
-"""
-The scaffolding node is used while constructing the orthogonal tree.
-
-The value of the scaffolding node is expected to be the smallest value
-in the tree contained in node. This is never checked.
-
-The points should be a vector of all points contained in the tree in
-node.
-"""
-struct ScaffoldingNode
-    node
-    value
-    points::Vector{Vector{Float64}}
-    ScaffoldingNode(node::Node, points) = (
-        new(node, node.value, points)
-    )
-    ScaffoldingNode(leaf::Leaf) = (
-        new(leaf, leaf.value, leaf.links)
-    )
-    ScaffoldingNode(node::Node, value::Float64, points::Vector{Vector{Float64}}) = (
-        new(node, value, points)
-    )
-end
-
-"""
-This function combines two scaffolding nodes into a new scaffolding node.
-
-To do this, the contained nodes are merged into a new node, with the left
-node as the left subtree and the right node as the right subtree. The new
-node will be given the value of the right subtree.
-
-The new scaffolding node will inherit the value from the left subtree. Thus,
-the property of keeping the lowest value in the tree as the value of the
-scaffolding node.
-
-If combine is done on the first level of the tree, then a subtree based on
-the second coordinate should be constructed and attached to the node. Else,
-if the combination is done on the second level, then the node will not
-have a subtree constructed.
-"""
-function combine(l::ScaffoldingNode, r::ScaffoldingNode, level::Int64)
-    if level == 1
-        node = Node(l.node, r.node, r.value, maketree(vcat(l.points, r.points), 2))
-    else
-        node = Node(l.node, r.node, r.value)
-    end
-    return ScaffoldingNode(node, l.value, vcat(l.points, r.points))
-end
-
-
 function find(tree::Node, key::Float64)
     if key < tree.value
         return find(tree.left, key)
@@ -164,37 +96,7 @@ function transformpoints(points::Vector{Float64})
     return (middles, sortedpoints)
 end
 
-function combine(nodes::Vector{ScaffoldingNode}, level)
-    new_nodes = Vector{ScaffoldingNode}()
 
-    n = length(nodes)
-    num_untouched = 2^ceil(Int, log2(n)) - n
-    for i = 1:2:n-num_untouched -1
-        push!(new_nodes, combine(nodes[i], nodes[i+1], level))
-    end
-
-    for i = n-num_untouched +1 : n
-        push!(new_nodes, nodes[i])
-    end
-    return new_nodes
-end
-
-function maketree(points::Vector{Vector{Float64}}, coordinate::Int64)
-    construction = Vector{ScaffoldingNode}()
-    sort!(points, by=x->x[coordinate])
-    for p in points
-        push!(construction, ScaffoldingNode(Leaf(p[coordinate], [p])))
-    end
-
-    while length(construction) > 1
-        if coordinate ==1
-            println(length(construction))
-        end
-        construction = combine(construction, coordinate)
-    end
-
-    return construction[1].node
-end
 
 function finlizeorsearch(possiblepoints::Vector{Vector{Float64}}, point, radius)
     for i in reverse(1:length(possiblepoints))
@@ -206,14 +108,9 @@ function finlizeorsearch(possiblepoints::Vector{Vector{Float64}}, point, radius)
     end
 end
 
-function finalizeorsearch(node::Node, point::Vector{Vector{Float64}}, radius::Float64)
-    find()
-end
 
 """
 Finds all points in a given radius around the given point.
-
-
 """
 function findradius(tree::Node, point::Vector{Float64}, radius::Float64)
     lower = point[1] - radius
